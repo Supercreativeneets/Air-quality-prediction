@@ -1,5 +1,8 @@
+import os
 import sys
-from src.logger import logging
+sys.path.append(os.path.abspath('/home/neetikayadav3732/Air_Quality_project/src'))
+
+from logger import logging
 
 def error_message_detail(error,error_detail:sys):
     _,_,exc_tb=error_detail.exc_info()

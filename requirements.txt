@@ -1,7 +1,12 @@
+glob
 pandas
 numpy
 matplotlib
+seaborn
 scikit-learn
+dill
+pickle
 
 
--e .
+
+#-e .
