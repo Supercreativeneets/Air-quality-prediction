@@ -1,0 +1,171 @@
+import os
+import sys
+sys.path.append(os.path.abspath('/home/neetikayadav3732/Air_Quality_project/src'))
+import numpy as np
+import tensorflow as tf 
+import keras
+from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
+from keras.losses import mean_squared_error
+from keras.models import Sequential
+from keras.layers import Dense
+from keras.layers import Flatten
+from keras.layers import LSTM
+from keras.layers import Dropout
+from keras import callbacks
+from tensorflow.keras.optimizers import Adam
+
+from exception import CustomException
+from logger import logging
+from utils import save_object
+
+from dataclasses import dataclass
+
+@dataclass
+class ModelTrainerConfig:
+    trained_model_file_path=os.path.join("artifacts","model.pkl")
+
+class ModelTrainer:
+    def __init__(self):
+        self.model_trainer_config=ModelTrainerConfig()
+
+
+    def initiate_model_trainer(self,train_array,val_array,test_array):
+        try:
+            logging.info("Convert series to supervised inputs and outputs")
+            
+            # Convert series to supervised inputs and outputs
+            
+            def to_supervised(data, n_input=24, n_out=1):
+                # flatten data
+                data = data.reshape((data.shape[0] * data.shape[1], data.shape[2]))
+                X, y = list(), list()
+                in_start = 0
+                
+                # step over the entire history one time step at a time
+                for _ in range(len(data)):
+                    
+                    # define the end of the input sequence
+                    in_end = in_start + n_input
+                    out_end = in_end + n_out
+                    
+                    # ensure we have enough data for this instance
+                    if out_end <= len(data):
+                        X.append(data[in_start:in_end, :])
+                        y.append(data[in_end:out_end, 0])
+
+                    # move along one time step
+                    in_start += 1
+
+                return np.array(X), np.array(y)
+            
+            # fit a model
+            def model_fit(train_array, val_array, batch_size):
+                
+                # Prepare training data
+                train_X, train_y = to_supervised(train_array, n_input=24)
+                val_X, val_y = to_supervised(val_array, n_input =24)
+                
+                # Build the model
+                tf.random.set_seed(7)
+                np.random.seed(7)
+                n_input, n_features, n_outputs = train_X.shape[1], train_X.shape[2], train_y.shape[1]
+                                
+                # Define the model
+                model = Sequential()
+                model.add(LSTM(200, return_sequences=False, activation='relu', input_shape=(n_input, n_features)))
+                model.add(Dropout(0.1))
+                model.add(Dense(100, activation='relu'))
+                model.add(Dropout(0.1))
+                model.add(Dense(50, activation='relu'))
+                model.add(Dropout(0.1))
+                model.add(Dense(n_outputs))
+
+                # Compile the model
+                model.compile(loss = 'mse' , optimizer= Adam(learning_rate = 0.0005))
+
+                es_callback = callbacks.EarlyStopping(monitor="val_loss", min_delta=1e-4,
+                                                      patience=50, restore_best_weights=True)
+
+                
+                # fit model
+                model.fit(train_X, train_y, epochs=200, batch_size=batch_size, verbose=0, 
+                          validation_data = (val_X,val_y),callbacks=[es_callback])
+
+                return model
+            
+            def evaluate_models(train_array, val_array, test_array, batch_size):
+                
+                key = "batch size :" + str(batch_size)
+
+                model = model_fit(train_array, val_array, batch_size)
+
+                # shape input for model
+                test_X, test_y = to_supervised(test_array, n_input =24)
+    
+                # make forecast
+                yhat = model.predict(test_X)
+
+                # actual observation
+                test_y = test_y.reshape(-1,1)
+                input_X = test_X.reshape((test_X.shape[0], test_X.shape[1]*test_X.shape[2]))
+    
+                # invert scaling for actual
+                inv_test_y = concatenate((test_y, input_X[:, -21:]), axis=1)
+                inv_test_y = scaler.inverse_transform(inv_test_y)
+                inv_test_y= inv_test_y[:, 0]
+
+                # invert scaling for predictions
+                inv_yhat = concatenate((yhat, input_X[:, -21:]), axis=1)
+                inv_yhat = scaler.inverse_transform(inv_yhat)
+                inv_yhat = inv_yhat[:, 0]
+
+                # estimate prediction error
+                rmse = sqrt(mean_squared_error(inv_test_y,inv_yhat))
+                mae = mean_absolute_error(inv_test_y, inv_yhat)
+                R2=r2_score(inv_test_y, inv_yhat)
+    
+                print(f"{key}, RMSE: {rmse:.3f}, MAE: {mae:.3f}, R2: {R2:.3f}")
+
+                return (key, rmse, mae, R2, model)
+
+        
+            def grid_search(train, val, test, n_batch):
+                results = []
+
+                for batch_size in n_batch:
+                    key, rmse, mae, R2, model = evaluate_models(train, val, test, batch_size)
+                    results.append((key, rmse, mae, R2, model))
+        
+
+                # Sort results by RMSE in ascending order
+                results.sort(key=lambda x: x[1])
+
+                best_model_key, min_rmse, _, _, best_model = results[0]
+
+                return best_model, min_rmse, results
+
+            # Call grid search
+            n_batch = [12, 24, 48]
+            
+            best_model, min_rmse, all_results = grid_search(train_array, val_array, test_array, n_batch)
+            print("Best batch size:", min_rmse)
+
+            # Print all results sorted by RMSE
+            print("\nAll Results Sorted by RMSE:")
+            for key, rmse, mae, R2, model in all_results:
+                print(f"{key}, RMSE: {rmse:.3f}, MAE: {mae:.3f}, R2: {R2:.3f}")
+            
+            logging.info(f"Best model")
+
+            save_object(
+                file_path=self.model_trainer_config.trained_model_file_path,
+                obj=best_model
+            )
+
+            
+        except Exception as e:
+            raise CustomException(e,sys)
+            
+            
+            
+            
