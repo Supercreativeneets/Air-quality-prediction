@@ -58,12 +58,13 @@ class ModelTrainer:
 
                 return np.array(X), np.array(y)
             
+            # Prepare data to supervised input and output
+            train_X, train_y = to_supervised(train_array, n_input=24)
+            val_X, val_y = to_supervised(val_array, n_input =24)
+            test_X, test_y = to_supervised(test_array, n_input =24)
+            
             # fit a model
-            def model_fit(train_array, val_array, batch_size):
-                
-                # Prepare training data
-                train_X, train_y = to_supervised(train_array, n_input=24)
-                val_X, val_y = to_supervised(val_array, n_input =24)
+            def model_fit(train_X, train_y, val_X, val_y, batch_size):
                 
                 # Build the model
                 tf.random.set_seed(7)
@@ -81,7 +82,7 @@ class ModelTrainer:
                 model.add(Dense(n_outputs))
 
                 # Compile the model
-                model.compile(loss = 'mse' , optimizer= Adam(learning_rate = 0.0005))
+                model.compile(loss = 'mse', optimizer= Adam(learning_rate = 0.0005))
 
                 es_callback = callbacks.EarlyStopping(monitor="val_loss", min_delta=1e-4,
                                                       patience=50, restore_best_weights=True)
@@ -93,32 +94,24 @@ class ModelTrainer:
 
                 return model
             
-            def evaluate_models(train_array, val_array, test_array, batch_size):
+            def evaluate_models(train_X, train_y, val_X, val_y, test_X, test_y, batch_size):
                 
                 key = "batch size :" + str(batch_size)
 
-                model = model_fit(train_array, val_array, batch_size)
+                model = model_fit(train_X, train_y, val_X, val_y, batch_size)
 
-                # shape input for model
-                test_X, test_y = to_supervised(test_array, n_input =24)
-    
                 # make forecast
                 yhat = model.predict(test_X)
 
                 # actual observation
                 test_y = test_y.reshape(-1,1)
-                input_X = test_X.reshape((test_X.shape[0], test_X.shape[1]*test_X.shape[2]))
-    
+                    
                 # invert scaling for actual
-                inv_test_y = concatenate((test_y, input_X[:, -21:]), axis=1)
-                inv_test_y = scaler.inverse_transform(inv_test_y)
-                inv_test_y= inv_test_y[:, 0]
-
+                inv_test_y = target_scaler.inverse_transform(test_y)
+                
                 # invert scaling for predictions
-                inv_yhat = concatenate((yhat, input_X[:, -21:]), axis=1)
-                inv_yhat = scaler.inverse_transform(inv_yhat)
-                inv_yhat = inv_yhat[:, 0]
-
+                inv_yhat = target_scaler.inverse_transform(yhat)
+                
                 # estimate prediction error
                 rmse = sqrt(mean_squared_error(inv_test_y,inv_yhat))
                 mae = mean_absolute_error(inv_test_y, inv_yhat)
@@ -129,11 +122,11 @@ class ModelTrainer:
                 return (key, rmse, mae, R2, model)
 
         
-            def grid_search(train, val, test, n_batch):
+            def grid_search(train_X, train_y, val_X, val_y, test_X, test_y, n_batch):
                 results = []
 
                 for batch_size in n_batch:
-                    key, rmse, mae, R2, model = evaluate_models(train, val, test, batch_size)
+                    key, rmse, mae, R2, model = evaluate_models(train_X, train_y, val_X, val_y, test_X, test_y, batch_size)
                     results.append((key, rmse, mae, R2, model))
         
 
@@ -147,7 +140,7 @@ class ModelTrainer:
             # Call grid search
             n_batch = [12, 24, 48]
             
-            best_model, min_rmse, all_results = grid_search(train_array, val_array, test_array, n_batch)
+            best_model, min_rmse, all_results = grid_search(train_X, train_y, val_X, val_y, test_X, test_y, n_batch)
             print("Best batch size:", min_rmse)
 
             # Print all results sorted by RMSE

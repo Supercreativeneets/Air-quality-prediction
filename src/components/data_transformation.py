@@ -20,7 +20,13 @@ from dataclasses import dataclass
 
 @dataclass
 class DataTransformationConfig:
-    preprocessor_obj_file_path=os.path.join('artifacts',"proprocessor.pkl")
+    preprocessor_obj_file_path=os.path.join('artifacts',"preprocessor.pkl")
+        
+class TargetScalerConfig:
+    target_scaler_obj_file_path=os.path.join('artifacts',"target_scaler.pkl")
+    
+class FeatureScalerConfig:
+    feature_scaler_obj_file_path=os.path.join('artifacts',"feature_scaler.pkl")
     
 class InterpolateImputer(BaseEstimator, TransformerMixin):
                 def __init__(self, method='linear', limit_direction='forward', axis=0):
@@ -47,9 +53,12 @@ class WindDirectionEncoder(BaseEstimator, TransformerMixin):
                     cos_Theta = np.cos(np.radians(angles))
                     return np.column_stack((sin_Theta, cos_Theta))
 
+            
 class DataTransformation:
     def __init__(self):
         self.data_transformation_config=DataTransformationConfig()
+        self.target_scaler_config=TargetScalerConfig()
+        self.feature_scaler_config=FeatureScalerConfig()
 
     def get_data_transformer_object(self):
         '''
@@ -105,7 +114,19 @@ class DataTransformation:
         
         except Exception as e:
             raise CustomException(e,sys)
+    
+    def get_target_scaler_object(self):
         
+        target_scaler = MinMaxScaler(feature_range=(0,1))
+            
+        return target_scaler
+    
+    def get_feature_scaler_object(self):
+        
+        feature_scaler = MinMaxScaler(feature_range=(0,1))
+            
+        return feature_scaler
+    
     def initiate_data_transformation(self,train_path,val_path,test_path):
 
         try:
@@ -130,23 +151,51 @@ class DataTransformation:
                 f"Applying preprocessing object on training, validation and testing dataframe."
             )
 
-            input_train_arr=preprocessing_obj.fit_transform(input_train_df)
-                            
-            input_val_arr=preprocessing_obj.transform(input_val_df)
-                        
+            input_train_arr=preprocessing_obj.fit_transform(input_train_df)              
+            input_val_arr=preprocessing_obj.transform(input_val_df)            
             input_test_arr=preprocessing_obj.transform(input_test_df)
-                       
-            # Scale and Re-structure into windows of 24 hrs
+            
+            
+            # Split and scale target and feature array
+            
+            target_train_arr=input_train_arr[ : , :1]
+            feature_train_arr=input_train_arr[ : ,1:]
+            
+            target_val_arr=input_val_arr[ : , :1]
+            feature_val_arr=input_val_arr[ : ,1:]
+            
+            target_test_arr=input_test_arr[ : , :1]
+            feature_test_arr=input_test_arr[ : ,1:]
+            
+            logging.info("Obtaining target scaler object")
+            target_scaler_obj=self.get_target_scaler_object()
+            
+            logging.info(
+                f"Applying target scaler object on target train, val and test array."
+            )
+            target_scaled_train = target_scaler_obj.fit_transform(target_train_arr)
+            target_scaled_val = target_scaler_obj.transform(target_val_arr) 
+            target_scaled_test = target_scaler_obj.transform(target_test_arr)
+            
+            logging.info("Obtaining feature scaler object")
+            feature_scaler_obj=self.get_feature_scaler_object()
+            
+            logging.info(
+                f"Applying feature scaler object on feature train, val and test array."
+            )
+            feature_scaled_train = feature_scaler_obj.fit_transform(feature_train_arr)
+            feature_scaled_val = feature_scaler_obj.transform(feature_val_arr) 
+            feature_scaled_test = feature_scaler_obj.transform(feature_test_arr)
 
-            scaler = MinMaxScaler(feature_range=(0,1))
-
-            train_arr = scaler.fit_transform(input_train_arr)
-            val_arr = scaler.transform(input_val_arr) 
-            test_arr = scaler.transform(input_test_arr)
-
-            train_arr = np.array(np.split(train_arr, len(train_arr) / 24))
-            val_arr = np.array(np.split(val_arr, len(val_arr) / 24))
-            test_arr = np.array(np.split(test_arr, len(test_arr) / 24))
+            # Concatenate scaled target and scaled feature array & finally re-structure into windows of 24 hrs
+            
+            scaled_train_arr = np.concatenate((target_scaled_train, feature_scaled_train), axis=1)
+            scaled_val_arr = np.concatenate((target_scaled_val, feature_scaled_val), axis=1)
+            scaled_test_arr = np.concatenate((target_scaled_test, feature_scaled_test), axis=1)
+            
+            train_arr = np.array(np.split(scaled_train_arr, len(scaled_train_arr) / 24))
+            val_arr = np.array(np.split(scaled_val_arr, len(scaled_val_arr) / 24))
+            test_arr = np.array(np.split(scaled_test_arr, len(scaled_test_arr) / 24))
             
             
             logging.info(f"Saved preprocessing object.")
@@ -157,12 +206,32 @@ class DataTransformation:
                 obj=preprocessing_obj
 
             )
+            
+            logging.info(f"Saved target scaler object.")
+
+            save_object(
+
+                file_path=self.target_scaler_config.target_scaler_obj_file_path,
+                obj=target_scaler_obj
+
+            )
+            
+            logging.info(f"Saved feature scaler object.")
+
+            save_object(
+
+                file_path=self.feature_scaler_config.feature_scaler_obj_file_path,
+                obj=feature_scaler_obj
+
+            )
 
             return (
                 train_arr,
                 val_arr,
                 test_arr,
                 self.data_transformation_config.preprocessor_obj_file_path,
+                self.target_scaler_config.target_scaler_obj_file_path,
+                self.feature_scaler_config.feature_scaler_obj_file_path
             )
         
         except Exception as e:
