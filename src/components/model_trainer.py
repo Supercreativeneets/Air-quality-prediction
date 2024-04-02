@@ -1,9 +1,10 @@
 import os
 import sys
-sys.path.append(os.path.abspath('/home/neetikayadav3732/Air_Quality_project/src'))
+sys.path.append(os.path.abspath('/content/drive/MyDrive/Air-quality-prediction/src'))
 import numpy as np
 import tensorflow as tf 
 import keras
+from math import sqrt
 from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from keras.losses import mean_squared_error
 from keras.models import Sequential
@@ -16,13 +17,13 @@ from tensorflow.keras.optimizers import Adam
 
 from exception import CustomException
 from logger import logging
-from utils import save_object
+from utils import save_object, load_object
 
 from dataclasses import dataclass
 
 @dataclass
 class ModelTrainerConfig:
-    trained_model_file_path=os.path.join("artifacts","model.pkl")
+    trained_model_file_path=os.path.join("artifacts","model.keras")
 
 class ModelTrainer:
     def __init__(self):
@@ -89,7 +90,7 @@ class ModelTrainer:
 
                 
                 # fit model
-                model.fit(train_X, train_y, epochs=200, batch_size=batch_size, verbose=0, 
+                model.fit(train_X, train_y, epochs=200, batch_size=batch_size, verbose=1, 
                           validation_data = (val_X,val_y),callbacks=[es_callback])
 
                 return model
@@ -105,20 +106,26 @@ class ModelTrainer:
 
                 # actual observation
                 test_y = test_y.reshape(-1,1)
-                    
+                
+                # get the target scaler object 
+                target_scaler_path=os.path.join('artifacts',"target_scaler.pkl")
+                target_scaler = load_object(file_path = target_scaler_path)
+                
                 # invert scaling for actual
                 inv_test_y = target_scaler.inverse_transform(test_y)
+                inv_test_y = inv_test_y.reshape(-1)
                 
                 # invert scaling for predictions
                 inv_yhat = target_scaler.inverse_transform(yhat)
+                inv_yhat = inv_yhat.reshape(-1)
                 
                 # estimate prediction error
                 rmse = sqrt(mean_squared_error(inv_test_y,inv_yhat))
                 mae = mean_absolute_error(inv_test_y, inv_yhat)
                 R2=r2_score(inv_test_y, inv_yhat)
-    
+                
                 print(f"{key}, RMSE: {rmse:.3f}, MAE: {mae:.3f}, R2: {R2:.3f}")
-
+    
                 return (key, rmse, mae, R2, model)
 
         
@@ -142,20 +149,19 @@ class ModelTrainer:
             
             best_model, min_rmse, all_results = grid_search(train_X, train_y, val_X, val_y, test_X, test_y, n_batch)
             print("Best batch size:", min_rmse)
+            
+            # Save the best model
+            best_model.save(self.model_trainer_config.trained_model_file_path)
 
             # Print all results sorted by RMSE
             print("\nAll Results Sorted by RMSE:")
             for key, rmse, mae, R2, model in all_results:
                 print(f"{key}, RMSE: {rmse:.3f}, MAE: {mae:.3f}, R2: {R2:.3f}")
+                
             
             logging.info(f"Best model")
 
-            save_object(
-                file_path=self.model_trainer_config.trained_model_file_path,
-                obj=best_model
-            )
-
-            
+                       
         except Exception as e:
             raise CustomException(e,sys)
             

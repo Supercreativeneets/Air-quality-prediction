@@ -5,7 +5,7 @@ import numpy as np
 import glob
 import datetime
 
-sys.path.append(os.path.abspath('/home/neetikayadav3732/Air_Quality_project/src'))
+sys.path.append(os.path.abspath('/content/drive/MyDrive/Air-quality-prediction/src'))
 
 from exception import CustomException
 from logger import logging
@@ -153,5 +153,5 @@ if __name__=="__main__":
     data_transformation=DataTransformation()
     train_arr,val_arr,test_arr,_,_,_=data_transformation.initiate_data_transformation(train_data,val_data,test_data)
     
-    
-    
+    modeltrainer=ModelTrainer()
+    print(modeltrainer.initiate_model_trainer(train_arr,val_arr,test_arr))
