@@ -9,7 +9,9 @@ from flask import Flask, render_template, request
 import pandas as pd
 from pipeline.predict_pipeline import PredictPipeline
 
-app = Flask(__name__)
+application = Flask(__name__)
+
+app = application
 
 def get_dates():
     test_path = os.path.join('artifacts', 'test.csv')
@@ -30,4 +32,4 @@ def index():
         return render_template('result.html', result=prediction)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000)

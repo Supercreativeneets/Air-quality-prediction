@@ -1,14 +1,13 @@
-glob
+glob2
 pandas
 numpy
 matplotlib
 seaborn
 scikit-learn
 dill
-pickle
+pickle5
 tensorflow
 keras
 flask
 
-
-#-e .
+-e .
