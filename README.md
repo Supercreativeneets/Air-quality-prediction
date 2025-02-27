@@ -4,7 +4,7 @@
 The objective of this project is to investigate the performances of few Artificial Neural Network models to forecast the concentration of PM2.5​
 
 ## Approach to solving the problem
-![Slide1](https://github.com/user-attachments/assets/9d90ff1d-fd5e-43dd-be61-9e7924c43dc8)
+  ![Slide8](https://github.com/user-attachments/assets/11f6f525-cafd-4213-ae97-dbfc14e929ab)
   ![Slide9](https://github.com/user-attachments/assets/7d84a051-96a7-44cd-8f37-2dc7e8a9a2a6)
   ![Slide10](https://github.com/user-attachments/assets/73e53d8e-3845-4abf-bc5b-0e5b9d783720)
   ![Slide11](https://github.com/user-attachments/assets/a2f5ca1f-e24a-4b50-81de-b909ad36cd51)
