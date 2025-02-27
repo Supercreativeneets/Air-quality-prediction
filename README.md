@@ -18,10 +18,12 @@ The objective of this project is to investigate the performances of few Artifici
       
 ## Model Summary
 * **Baseline/Naive Forecasting**
-  **The approach to create a baseline for checking the performance of the models is to assume that predicted value is the last value of the sequence (Naive Forecasting).​
-    ***Baseline Test RMSE: 23.620​
-    ***Baseline Test MAE: 12.443​
-    ***Baseline Test R2: 0.950
+  The approach to create a baseline for checking the performance of the models is to assume that predicted value is the last value of the sequence (Naive Forecasting).​
+    ```
+    Baseline Test RMSE: 23.620​
+    Baseline Test MAE: 12.443​
+    Baseline Test R2: 0.950
+    ```
 
 * **Multi-Layer Perceptron (MLP)**
   ![Slide21](https://github.com/user-attachments/assets/48f127e8-3664-499b-ac00-f34232b2f83a)
