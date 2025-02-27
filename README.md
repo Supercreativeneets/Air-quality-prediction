@@ -5,13 +5,16 @@ The objective of this project is to investigate the performances of few Artifici
 
 ## Approach to solving the problem
   ![Slide8](https://github.com/user-attachments/assets/11f6f525-cafd-4213-ae97-dbfc14e929ab)
-  ![Slide9](https://github.com/user-attachments/assets/7d84a051-96a7-44cd-8f37-2dc7e8a9a2a6)
-  ![Slide10](https://github.com/user-attachments/assets/73e53d8e-3845-4abf-bc5b-0e5b9d783720)
-  ![Slide11](https://github.com/user-attachments/assets/a2f5ca1f-e24a-4b50-81de-b909ad36cd51)
-  ![Slide12](https://github.com/user-attachments/assets/0f0ffc4a-86a2-4801-a11c-655ec7fdc2c5)
-  ![Slide13](https://github.com/user-attachments/assets/5bd6677e-bc31-4380-b1c2-1dc9c82a9af9)
-  ![Slide14](https://github.com/user-attachments/assets/8f3c81bb-18c8-47f3-8573-459d81d89e15)
-  ![Slide15](https://github.com/user-attachments/assets/a902518a-6d86-437a-a348-8ee476a84d85)
+  * **Dataset**
+    ![Slide9](https://github.com/user-attachments/assets/7d84a051-96a7-44cd-8f37-2dc7e8a9a2a6)
+  * **Data Pre-processing**
+    ![Slide10](https://github.com/user-attachments/assets/73e53d8e-3845-4abf-bc5b-0e5b9d783720)
+    ![Slide11](https://github.com/user-attachments/assets/a2f5ca1f-e24a-4b50-81de-b909ad36cd51)
+  * **Feature Selection**
+    ![Slide12](https://github.com/user-attachments/assets/0f0ffc4a-86a2-4801-a11c-655ec7fdc2c5)
+    ![Slide13](https://github.com/user-attachments/assets/5bd6677e-bc31-4380-b1c2-1dc9c82a9af9)
+    ![Slide14](https://github.com/user-attachments/assets/8f3c81bb-18c8-47f3-8573-459d81d89e15)
+    ![Slide15](https://github.com/user-attachments/assets/a902518a-6d86-437a-a348-8ee476a84d85)
       
 ## Model Summary
 * **Baseline/Naive Forecasting**
